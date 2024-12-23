@@ -37,7 +37,8 @@ public class GlobalExceptionMiddleware
         var response = context.Response;
         response.ContentType = "application/json";
 
-        var result = new {
+        var result = new
+        {
             Status = "Error",
             Message = _environment.IsDevelopment() ? 
                 exception.Message : "An internal server error occurred.",
@@ -49,7 +50,7 @@ public class GlobalExceptionMiddleware
         {
             case OperationCanceledException:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
-                result = new { Status = "Error", Message = "The operation was canceled." };
+                result = new { Status = "Error", Message = "The operation was canceled.", Details = (string?)null };
                 break;
 
             case InvalidOperationException:
