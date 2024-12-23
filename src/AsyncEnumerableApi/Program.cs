@@ -3,6 +3,8 @@ using AsyncEnumerableApi.Infrastructure.Streaming;
 using AsyncEnumerableApi.Infrastructure.Streaming.Handlers;
 using AsyncEnumerableApi.Infrastructure.Swagger;
 using AsyncEnumerableApi.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 
@@ -17,21 +19,48 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader());
 });
 
+// Add API versioning
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+});
+
+builder.Services.AddVersionedApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 // Configure Swagger
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo
+    // Add security definition
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Title = "Streaming API Demo",
-        Version = "v1",
-        Description = "A Web API demonstrating advanced streaming capabilities using IAsyncEnumerable",
-        Contact = new OpenApiContact
+        Description = "JWT Authorization header using the Bearer scheme.",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
         {
-            Name = "Your Name",
-            Email = "your.email@example.com"
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
         }
     });
 
@@ -40,12 +69,17 @@ builder.Services.AddSwaggerGen(c =>
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
 
-    // Add streaming operation filter
+    // Add operation filters
     c.OperationFilter<StreamingOperationFilter>();
+    c.OperationFilter<SwaggerDefaultValues>();
 
-    // Add custom documentation for common parameters
+    // Add document filters
     c.DocumentFilter<StreamingDocumentationFilter>();
+    c.DocumentFilter<SwaggerExamples>();
 });
+
+// Configure Swagger options
+builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 
 // Register services
 builder.Services.AddMemoryCache();
@@ -55,17 +89,27 @@ builder.Services.AddSingleton<IProductService, ProductService>();
 
 var app = builder.Build();
 
+// Get API version information provider
+var apiVersionDescriptionProvider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+
 // Ensure the StreamingEventHandler is created to start handling events
 app.Services.GetRequiredService<StreamingEventHandler>();
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
+    app.UseSwaggerUI(options =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Streaming API V1");
-        c.EnableDeepLinking();
-        c.DisplayRequestDuration();
+        foreach (var description in apiVersionDescriptionProvider.ApiVersionDescriptions)
+        {
+            options.SwaggerEndpoint(
+                $"/swagger/{description.GroupName}/swagger.json",
+                $"Streaming API {description.GroupName.ToUpperInvariant()}");
+        }
+
+        options.EnableDeepLinking();
+        options.DisplayRequestDuration();
+        options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List);
     });
 }
 
