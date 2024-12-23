@@ -6,12 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AsyncEnumerableApi.Controllers;
 
-/// <summary>
-/// Controller for demonstrating streaming with large datasets
-/// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Produces("application/json")]
 public class LargeDataController : ControllerBase
 {
     private readonly IEventBus _eventBus;
@@ -25,16 +21,6 @@ public class LargeDataController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Streams a large dataset of products with configurable size and filtering
-    /// </summary>
-    /// <param name="totalItems">Total number of items to generate (default: 10000)</param>
-    /// <param name="category">Optional category filter</param>
-    /// <param name="minPrice">Minimum price filter</param>
-    /// <param name="maxPrice">Maximum price filter</param>
-    /// <param name="batchSize">Number of items per batch (default: 1000)</param>
-    /// <param name="delayMs">Delay between batches in milliseconds (default: 100)</param>
-    /// <returns>A stream of products</returns>
     [HttpGet("stream")]
     public async IAsyncEnumerable<Product> GetLargeDataStream(
         [FromQuery] int totalItems = 10000,
@@ -62,26 +48,18 @@ public class LargeDataController : ControllerBase
             products = products.Where(p => p.Price <= maxPrice.Value);
         }
 
-        var options = new StreamingOptions()
-            .WithBatchSize(batchSize)
-            .WithDelay(delayMs)
-            .WithExpectedCount(totalItems);
-
-        await foreach (var product in products
-            .ToStreamingEnumerable(_eventBus, options)
-            .WithProgressReporting(count => 
-                _logger.LogInformation("Streamed {Count} items", count))
-            .WithCancellation(cancellationToken))
+        await foreach (var product in products.ToAsyncEnumerable())
         {
             yield return product;
+            if (delayMs > 0)
+            {
+                await Task.Delay(delayMs, cancellationToken);
+            }
         }
     }
 
-    /// <summary>
-    /// Streams products with advanced features including transformation and analysis
-    /// </summary>
     [HttpGet("advanced-stream")]
-    public async IAsyncEnumerable<Product> GetAdvancedLargeDataStream(
+    public async IAsyncEnumerable<Product> GetAdvancedStream(
         [FromQuery] int totalItems = 10000,
         [FromQuery] string? category = null,
         [FromQuery] int batchSize = 1000,
@@ -94,37 +72,23 @@ public class LargeDataController : ControllerBase
             products = products.Where(p => p.Category == category);
         }
 
-        var options = new StreamingOptions()
-            .WithBatchSize(batchSize)
-            .WithDelay(100)
-            .WithExpectedCount(totalItems);
-
-        await foreach (var product in products
-            .ToStreamingEnumerable(_eventBus, options)
-            .WithFilter(async p => p.Rating >= 4.0) // Only high-rated products
-            .WithTransform(async p =>
-            {
-                // Add a quality indicator based on rating and review count
-                var qualityScore = p.Rating * Math.Log10(p.ReviewCount + 1);
-                return p with
-                {
-                    Name = $"{p.Name} (Quality Score: {qualityScore:F1})"
-                };
-            })
-            .WithProgressReporting(count => 
-                _logger.LogInformation("Processed {Count} items", count))
-            .WithThrottling(1000) // 1000 items per second
-            .WithTimeout(TimeSpan.FromMinutes(5))
-            .WithRetry(maxRetries: 3)
-            .WithCancellation(cancellationToken))
+        await foreach (var product in products.ToAsyncEnumerable())
         {
-            yield return product;
+            if (product.Rating >= 4.0) // Filter for high-rated products
+            {
+                // Transform the product
+                var qualityScore = product.Rating * Math.Log10(product.ReviewCount + 1);
+                yield return product with
+                {
+                    Name = $"{product.Name} (Quality Score: {qualityScore:F1})"
+                };
+            }
+
+            // Add delay for controlled streaming
+            await Task.Delay(100, cancellationToken);
         }
     }
 
-    /// <summary>
-    /// Gets available categories and their statistics
-    /// </summary>
     [HttpGet("categories")]
     public ActionResult<IEnumerable<object>> GetCategoryStats()
     {
