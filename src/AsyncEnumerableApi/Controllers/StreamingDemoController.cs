@@ -21,63 +21,43 @@ public class StreamingDemoController : ControllerBase
     }
 
     [HttpGet("basic-stream")]
-    public async IAsyncEnumerable<Product> GetBasicStream(
-        [FromQuery] string? category,
+    [Streaming(BatchSize = 50, DelayMilliseconds = 100)]
+    public async IAsyncEnumerable<DataItem> GetDataStream(
+        [FromQuery] int totalItems = 1000,
         [FromQuery] int batchSize = 100,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [FromQuery] int delayMs = 100,
+        CancellationToken cancellationToken = default)
     {
-        var products = GetSampleProducts(category);
-        var options = new StreamingOptions()
-            .WithBatchSize(batchSize)
-            .WithDelay(100)
-            .WithExpectedCount(products.Count());
+        var data = Enumerable.Range(0, totalItems)
+            .Select(id => new DataItem
+            {
+                Id = id,
+                Name = $"Item {id}",
+                Timestamp = DateTime.UtcNow,
+                Value = (decimal)(new Random().NextDouble() * 1000)
+            });
 
-        await foreach (var product in products.ToStreamingEnumerable(
-            _eventBus, options, cancellationToken))
+        await foreach (var item in data.ToAsyncEnumerable())
         {
-            yield return product;
+            yield return item;
+            await Task.Delay(delayMs, cancellationToken);
         }
     }
 
-    [HttpGet("advanced-stream")]
-    public async IAsyncEnumerable<Product> GetAdvancedStream(
-        [FromQuery] string? category,
-        [FromQuery] int batchSize = 100,
-        [FromQuery] int? maxPrice = null,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    [HttpGet("wrapped")]
+    public async IAsyncEnumerable<DataItem> GetWrappedData(
+        CancellationToken cancellationToken = default)
     {
-        var products = GetSampleProducts(category);
-        
-        await foreach (var product in products
-            .ToStreamingEnumerable(_eventBus)
-            .WithFilter(async p => maxPrice == null || p.Price <= maxPrice)
-            .WithTransform(async p =>
-            {
-                p.Name = p.Name.ToUpper(); // Example transformation
-                return p;
-            })
-            .Chunk(batchSize)
-            .WithProgressReporting(count => 
-                _logger.LogInformation("Processed {Count} items", count))
-            .WithThrottling(100) // 100 items per second
-            .WithTimeout(TimeSpan.FromMinutes(5))
-            .WithRetry(maxRetries: 3)
-            .WithCancellation(cancellationToken))
-        {
-            foreach (var product in product) // product is a chunk
-            {
-                yield return product;
-            }
-        }
-    }
+        var batchSize = HttpContext.Items["StreamingBatchSize"] as int? ?? 100;
+        var delayMs = HttpContext.Items["StreamingDelayMilliseconds"] as int? ?? 100;
 
-    private IEnumerable<Product> GetSampleProducts(string? category)
-    {
-        var products = SeedData.GenerateProducts(1000);
-        if (!string.IsNullOrEmpty(category))
+        await foreach (var item in GetDataStream(
+            totalItems: 1000,
+            batchSize: batchSize,
+            delayMs: delayMs,
+            cancellationToken: cancellationToken))
         {
-            products = products.Where(p => p.Category == category);
+            yield return item;
         }
-        return products;
     }
 }
