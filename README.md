@@ -1,131 +1,131 @@
 # AsyncEnumerable Web API Demo
 
-This project demonstrates the use of IAsyncEnumerable in a .NET 8 Web API for efficient data streaming, along with an Angular 17 client that showcases real-time data consumption and monitoring.
+This project demonstrates advanced streaming capabilities in a .NET 8 Web API using IAsyncEnumerable with enhanced features including event bus, channels, and monitoring.
 
 ## Features
 
-### Backend (.NET 8)
-- Asynchronous data streaming using IAsyncEnumerable
-- Health monitoring system
+### Streaming Infrastructure
+- Event-based streaming with monitoring
+- Channel-based backpressure handling
+- Configurable batching and rate limiting
+- Progress tracking and metrics collection
+- Error handling and retry mechanisms
+
+### Streaming Operations
+- Filtering and transformation
+- Chunking and batching
+- Progress reporting
+- Rate limiting
+- Backpressure handling
+- Timeout and retry logic
+
+### Monitoring and Events
+- Stream start/progress/completion events
 - Performance metrics collection
-- Global error handling
-- Retry policies for resilience
-- Clean architecture with dependency injection
-- Product catalog demo with 1000+ sample products
-
-### Frontend (Angular 17)
-- Real-time data loading with progress indication
-- Health monitoring dashboard
-- Performance metrics visualization
-- Error notification system
-- Filtering and pagination support
-- Responsive Bootstrap UI
-
-## Project Structure
-
-- `src/AsyncEnumerableApi`: .NET 8 Web API project
-- `client`: Angular 17 client application
+- Real-time progress tracking
+- Error monitoring and reporting
 
 ## Getting Started
 
 ### Prerequisites
-
 - .NET 8 SDK
-- Node.js and npm
-- Angular CLI (`npm install -g @angular/cli`)
+- Visual Studio 2022 or VS Code
 
-### Running the API
-
-1. Navigate to the API project directory:
+### Running the Application
+1. Clone the repository
+2. Navigate to the API project:
 ```bash
 cd src/AsyncEnumerableApi
-```
-
-2. Run the API:
-```bash
 dotnet run
 ```
 
-The API will be available at `https://localhost:7001`
+## Usage Examples
 
-### Running the Angular Client
+### Basic Streaming
+```csharp
+[HttpGet("stream")]
+public async IAsyncEnumerable<Product> GetProductsStream(
+    CancellationToken cancellationToken)
+{
+    var products = await _repository.GetProducts();
+    var options = new StreamingOptions()
+        .WithBatchSize(50)
+        .WithDelay(100);
 
-1. Navigate to the client directory:
-```bash
-cd client
+    await foreach (var product in products.ToStreamingEnumerable(
+        _eventBus, options, cancellationToken))
+    {
+        yield return product;
+    }
+}
 ```
 
-2. Install dependencies:
-```bash
-npm install
+### Advanced Features
+```csharp
+await foreach (var product in products
+    .ToStreamingEnumerable(_eventBus)
+    .WithFilter(async p => p.Price <= maxPrice)
+    .WithTransform(async p => {
+        p.Name = p.Name.ToUpper();
+        return p;
+    })
+    .Chunk(50)
+    .WithProgressReporting(count => 
+        _logger.LogInformation("Processed {Count} items", count))
+    .WithThrottling(100)
+    .WithTimeout(TimeSpan.FromMinutes(5))
+    .WithRetry(maxRetries: 3))
+{
+    yield return product;
+}
 ```
 
-3. Start the development server:
-```bash
-ng serve
-```
+## Architecture
 
-The client will be available at `http://localhost:4200`
+### Event Bus
+- InMemoryEventBus for event handling
+- Stream lifecycle events (Start/Progress/Complete/Error)
+- Subscription-based event monitoring
 
-## API Endpoints
+### Streaming Channel
+- Channel-based streaming implementation
+- Backpressure handling
+- Configurable buffer sizes
+- Rate limiting support
 
-### Products API
+### Streaming Options
+- Batch size configuration
+- Delay settings
+- Progress update intervals
+- Timeout configuration
+- Backpressure settings
 
-```http
-GET /api/products/stream?pageSize=20&category=Electronics&minPrice=100&maxPrice=1000
-```
+## Monitoring
 
-Parameters:
-- `pageSize`: Number of items per batch (default: 20)
-- `category`: Filter by product category
-- `minPrice`: Minimum price filter
-- `maxPrice`: Maximum price filter
+### Events
+- StreamStartedEvent
+- StreamProgressEvent
+- StreamCompletedEvent
+- StreamErrorEvent
 
-### Health Check API
-
-```http
-GET /health
-```
-
-Returns the system health status including:
-- Overall system health
-- Component status
-- Performance metrics
+### Metrics
+- Items processed
+- Processing rate
 - Memory usage
+- Error tracking
 
-## Implementation Details
+## Error Handling
+- Retry mechanisms
+- Timeout handling
+- Error events
+- Global exception handling
 
-### Backend Features
-- Uses IAsyncEnumerable for efficient streaming
-- Implements custom streaming middleware
-- Includes sample data generation
-- Health monitoring system
-- Performance metrics collection
-- Global error handling
-- CORS configuration
-
-### Frontend Features
-- Real-time data loading
-- Health status monitoring
-- Performance visualization
-- Error notification system
-- Progress indication
-- Responsive design
-
-## Monitoring and Error Handling
-
-### Health Monitoring
-- Real-time system health updates
-- Component status tracking
-- Performance metrics visualization
-- Memory usage monitoring
-
-### Error Handling
-- Global exception middleware
-- Toast notifications
-- Retry policies
-- Error logging
+## Best Practices
+1. Use appropriate batch sizes for your data
+2. Configure reasonable timeouts
+3. Implement proper error handling
+4. Monitor stream progress
+5. Handle backpressure appropriately
 
 ## License
-
 This project is licensed under the MIT License
