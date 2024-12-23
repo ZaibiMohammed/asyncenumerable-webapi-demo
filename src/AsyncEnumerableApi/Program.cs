@@ -1,10 +1,7 @@
-using AsyncEnumerableApi.Infrastructure.AsyncEnumerable;
-using AsyncEnumerableApi.Infrastructure.Health;
-using AsyncEnumerableApi.Infrastructure.Middleware;
-using AsyncEnumerableApi.Infrastructure.Monitoring;
+using AsyncEnumerableApi.Infrastructure.EventBus;
+using AsyncEnumerableApi.Infrastructure.Streaming;
+using AsyncEnumerableApi.Infrastructure.Streaming.Handlers;
 using AsyncEnumerableApi.Services;
-using HealthChecks.UI.Client;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,18 +18,17 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Register health checks
-builder.Services.AddHealthChecks()
-    .AddCheck<StreamingHealthCheck>("streaming_health_check");
-
 // Register services
-builder.Services.AddSingleton<IDataStreamingService, DataStreamingService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
+builder.Services.AddSingleton<StreamingEventHandler>();
 builder.Services.AddSingleton<IProductService, ProductService>();
-builder.Services.AddSingleton<StreamingMetricsCollector>();
 
 var app = builder.Build();
 
-// Configure middleware pipeline
+// Ensure the StreamingEventHandler is created to start handling events
+app.Services.GetRequiredService<StreamingEventHandler>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -40,18 +36,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAngularDev");
-
-// Add custom middleware
-app.UseMiddleware<GlobalExceptionMiddleware>();
-app.UseMiddleware<StreamingMonitorMiddleware>();
-app.UseMiddleware<StreamingMiddleware>();
-
-// Configure health check endpoint
-app.MapHealthChecks("/health", new HealthCheckOptions
-{
-    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
-});
-
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
