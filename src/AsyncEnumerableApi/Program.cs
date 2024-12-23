@@ -1,4 +1,5 @@
 using AsyncEnumerableApi.Infrastructure.AsyncEnumerable;
+using AsyncEnumerableApi.Infrastructure.Monitoring;
 using AsyncEnumerableApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +20,7 @@ builder.Services.AddSwaggerGen();
 // Register services
 builder.Services.AddSingleton<IDataStreamingService, DataStreamingService>();
 builder.Services.AddSingleton<IProductService, ProductService>();
+builder.Services.AddSingleton<StreamingMetricsCollector>();
 
 var app = builder.Build();
 
@@ -31,6 +33,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowAngularDev");
 
 // Add streaming middleware
+app.UseMiddleware<StreamingMonitorMiddleware>();
 app.UseMiddleware<StreamingMiddleware>();
 
 app.UseHttpsRedirection();
