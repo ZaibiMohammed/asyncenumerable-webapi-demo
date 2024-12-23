@@ -1,29 +1,20 @@
 # AsyncEnumerable Web API Demo
 
-This project demonstrates advanced streaming capabilities in a .NET 8 Web API using IAsyncEnumerable with enhanced features including event bus, channels, and monitoring.
+A comprehensive demonstration of streaming capabilities in .NET 8 using IAsyncEnumerable, showcasing large dataset handling, performance monitoring, and real-time analytics.
 
 ## Features
 
-### Streaming Infrastructure
-- Event-based streaming with monitoring
-- Channel-based backpressure handling
-- Configurable batching and rate limiting
-- Progress tracking and metrics collection
-- Error handling and retry mechanisms
+### Streaming Capabilities
+- Efficient large dataset streaming
+- Configurable batch processing
+- Progress monitoring and analytics
+- Memory-efficient data handling
 
-### Streaming Operations
-- Filtering and transformation
-- Chunking and batching
-- Progress reporting
-- Rate limiting
-- Backpressure handling
-- Timeout and retry logic
-
-### Monitoring and Events
-- Stream start/progress/completion events
-- Performance metrics collection
-- Real-time progress tracking
-- Error monitoring and reporting
+### Key Components
+- AsyncEnumerable extensions for enhanced streaming
+- Performance monitoring and metrics
+- Real-time data analytics
+- Swagger documentation
 
 ## Getting Started
 
@@ -32,100 +23,93 @@ This project demonstrates advanced streaming capabilities in a .NET 8 Web API us
 - Visual Studio 2022 or VS Code
 
 ### Running the Application
-1. Clone the repository
-2. Navigate to the API project:
+
 ```bash
-cd src/AsyncEnumerableApi
-dotnet run
+# Clone the repository
+git clone https://github.com/yourusername/asyncenumerable-webapi-demo.git
+cd asyncenumerable-webapi-demo
+
+# Run the API
+dotnet run --project src/AsyncEnumerableApi/AsyncEnumerableApi.csproj
 ```
 
-## Usage Examples
+The API will be available at `https://localhost:7001`
+
+## API Endpoints
 
 ### Basic Streaming
-```csharp
-[HttpGet("stream")]
-public async IAsyncEnumerable<Product> GetProductsStream(
-    CancellationToken cancellationToken)
-{
-    var products = await _repository.GetProducts();
-    var options = new StreamingOptions()
-        .WithBatchSize(50)
-        .WithDelay(100);
-
-    await foreach (var product in products.ToStreamingEnumerable(
-        _eventBus, options, cancellationToken))
-    {
-        yield return product;
-    }
-}
+```http
+GET /api/LargeData/stream?totalItems=10000&batchSize=1000
 ```
 
-### Advanced Features
-```csharp
-await foreach (var product in products
-    .ToStreamingEnumerable(_eventBus)
-    .WithFilter(async p => p.Price <= maxPrice)
-    .WithTransform(async p => {
-        p.Name = p.Name.ToUpper();
-        return p;
-    })
-    .Chunk(50)
-    .WithProgressReporting(count => 
-        _logger.LogInformation("Processed {Count} items", count))
-    .WithThrottling(100)
-    .WithTimeout(TimeSpan.FromMinutes(5))
-    .WithRetry(maxRetries: 3))
-{
-    yield return product;
-}
+Parameters:
+- `totalItems`: Number of items to generate (default: 10000)
+- `batchSize`: Items per batch (default: 1000)
+- `delayMs`: Delay between batches in milliseconds
+- `category`: Filter by category
+- `minPrice`: Minimum price filter
+- `maxPrice`: Maximum price filter
+
+### Advanced Streaming
+```http
+GET /api/LargeData/advanced-stream
 ```
 
-## Architecture
+Features:
+- High-rated product filtering
+- Quality score calculation
+- Progress monitoring
+- Batch processing
 
-### Event Bus
-- InMemoryEventBus for event handling
-- Stream lifecycle events (Start/Progress/Complete/Error)
-- Subscription-based event monitoring
+### Category Analytics
+```http
+GET /api/LargeData/categories
+```
 
-### Streaming Channel
-- Channel-based streaming implementation
-- Backpressure handling
-- Configurable buffer sizes
-- Rate limiting support
+Provides category-wise statistics including:
+- Product counts
+- Average prices
+- Total stock
+- Average ratings
 
-### Streaming Options
-- Batch size configuration
-- Delay settings
-- Progress update intervals
-- Timeout configuration
-- Backpressure settings
+## Implementation Details
 
-## Monitoring
+### AsyncEnumerable Extensions
+```csharp
+// Stream with delay between items
+await foreach (var item in source.WithDelay(100))
 
-### Events
-- StreamStartedEvent
-- StreamProgressEvent
-- StreamCompletedEvent
-- StreamErrorEvent
+// Stream with batch processing
+await foreach (var item in source.WithBatchDelay(1000, 100))
 
-### Metrics
-- Items processed
-- Processing rate
-- Memory usage
-- Error tracking
+// Stream with progress reporting
+await foreach (var item in source.WithProgress(count => 
+    Console.WriteLine($"Processed {count} items")))
+```
 
-## Error Handling
-- Retry mechanisms
-- Timeout handling
-- Error events
-- Global exception handling
+### Performance Monitoring
+- Real-time streaming metrics
+- Memory usage tracking
+- Processing rate monitoring
+- Error handling
 
 ## Best Practices
-1. Use appropriate batch sizes for your data
-2. Configure reasonable timeouts
-3. Implement proper error handling
-4. Monitor stream progress
-5. Handle backpressure appropriately
+
+1. **Memory Management**
+   - Use appropriate batch sizes
+   - Monitor memory usage
+   - Implement backpressure when needed
+
+2. **Error Handling**
+   - Implement retry logic
+   - Handle cancellation properly
+   - Log errors and progress
+
+3. **Performance**
+   - Configure batch sizes based on data size
+   - Adjust delays based on client capabilities
+   - Monitor streaming metrics
 
 ## License
+
 This project is licensed under the MIT License
