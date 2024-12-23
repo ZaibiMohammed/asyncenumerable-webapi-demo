@@ -1,3 +1,4 @@
+using AsyncEnumerableApi.Infrastructure.AsyncEnumerable;
 using AsyncEnumerableApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +17,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Add streaming middleware
+app.UseMiddleware<StreamingMiddleware>();
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
