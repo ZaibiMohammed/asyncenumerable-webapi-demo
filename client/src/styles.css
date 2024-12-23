@@ -1,0 +1,15 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+/* Additional custom styles */
+.table-hover tbody tr:hover {
+  background-color: rgba(0,0,0,.075);
+}
+
+.loading-overlay {
+  background-color: rgba(255,255,255,0.8);
+  z-index: 1000;
+}
+
+.filter-panel .form-label {
+  font-weight: 500;
+}
