@@ -1,15 +1,25 @@
 # AsyncEnumerable Web API Demo
 
-This project demonstrates the use of IAsyncEnumerable in a .NET 8 Web API for efficient data streaming, along with an Angular 17 client that showcases real-time data consumption.
+This project demonstrates the use of IAsyncEnumerable in a .NET 8 Web API for efficient data streaming, along with an Angular 17 client that showcases real-time data consumption and monitoring.
 
 ## Features
 
+### Backend (.NET 8)
 - Asynchronous data streaming using IAsyncEnumerable
-- Real-time data loading with progress indication
-- Filtering and pagination support
+- Health monitoring system
+- Performance metrics collection
+- Global error handling
+- Retry policies for resilience
 - Clean architecture with dependency injection
-- Angular 17 client with Bootstrap UI
 - Product catalog demo with 1000+ sample products
+
+### Frontend (Angular 17)
+- Real-time data loading with progress indication
+- Health monitoring dashboard
+- Performance metrics visualization
+- Error notification system
+- Filtering and pagination support
+- Responsive Bootstrap UI
 
 ## Project Structure
 
@@ -71,29 +81,50 @@ Parameters:
 - `minPrice`: Minimum price filter
 - `maxPrice`: Maximum price filter
 
-### Categories API
+### Health Check API
 
 ```http
-GET /api/products/categories
+GET /health
 ```
 
-Returns available product categories.
+Returns the system health status including:
+- Overall system health
+- Component status
+- Performance metrics
+- Memory usage
 
 ## Implementation Details
 
-### Backend (.NET)
+### Backend Features
 - Uses IAsyncEnumerable for efficient streaming
 - Implements custom streaming middleware
 - Includes sample data generation
-- Supports filtering and pagination
-- CORS configuration for local development
+- Health monitoring system
+- Performance metrics collection
+- Global error handling
+- CORS configuration
 
-### Frontend (Angular)
+### Frontend Features
 - Real-time data loading
+- Health status monitoring
+- Performance visualization
+- Error notification system
 - Progress indication
-- Filter panel for category and price range
-- Responsive Bootstrap UI
-- Error handling and loading states
+- Responsive design
+
+## Monitoring and Error Handling
+
+### Health Monitoring
+- Real-time system health updates
+- Component status tracking
+- Performance metrics visualization
+- Memory usage monitoring
+
+### Error Handling
+- Global exception middleware
+- Toast notifications
+- Retry policies
+- Error logging
 
 ## License
 
