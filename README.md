@@ -1,66 +1,99 @@
 # AsyncEnumerable Web API Demo
 
-This project demonstrates the use of IAsyncEnumerable in a .NET 8 Web API for efficient data streaming.
+This project demonstrates the use of IAsyncEnumerable in a .NET 8 Web API for efficient data streaming, along with an Angular 17 client that showcases real-time data consumption.
 
 ## Features
 
 - Asynchronous data streaming using IAsyncEnumerable
-- Configurable batch sizes and delays
-- Cancellation support
+- Real-time data loading with progress indication
+- Filtering and pagination support
 - Clean architecture with dependency injection
-- Swagger UI integration
+- Angular 17 client with Bootstrap UI
+- Product catalog demo with 1000+ sample products
+
+## Project Structure
+
+- `src/AsyncEnumerableApi`: .NET 8 Web API project
+- `client`: Angular 17 client application
 
 ## Getting Started
 
 ### Prerequisites
 
 - .NET 8 SDK
-- Visual Studio 2022 or VS Code
+- Node.js and npm
+- Angular CLI (`npm install -g @angular/cli`)
 
-### Running the Application
+### Running the API
 
-1. Clone the repository
-2. Navigate to the project directory
-3. Run the application:
-   ```bash
-   dotnet restore
-   dotnet run --project src/AsyncEnumerableApi/AsyncEnumerableApi.csproj
-   ```
-4. Open your browser and navigate to `https://localhost:7001/swagger` to view the Swagger UI
+1. Navigate to the API project directory:
+```bash
+cd src/AsyncEnumerableApi
+```
 
-## API Usage
+2. Run the API:
+```bash
+dotnet run
+```
 
-The API exposes an endpoint that streams data items:
+The API will be available at `https://localhost:7001`
+
+### Running the Angular Client
+
+1. Navigate to the client directory:
+```bash
+cd client
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Start the development server:
+```bash
+ng serve
+```
+
+The client will be available at `http://localhost:4200`
+
+## API Endpoints
+
+### Products API
 
 ```http
-GET /api/streaming/data?totalItems=1000&batchSize=100&delayMs=100
+GET /api/products/stream?pageSize=20&category=Electronics&minPrice=100&maxPrice=1000
 ```
 
 Parameters:
-- `totalItems`: Total number of items to generate (default: 1000)
-- `batchSize`: Number of items per batch (default: 100)
-- `delayMs`: Delay between batches in milliseconds (default: 100)
+- `pageSize`: Number of items per batch (default: 20)
+- `category`: Filter by product category
+- `minPrice`: Minimum price filter
+- `maxPrice`: Maximum price filter
 
-## Example Usage with curl
+### Categories API
 
-```bash
-curl -N "https://localhost:7001/api/streaming/data?totalItems=500&batchSize=50&delayMs=100"
+```http
+GET /api/products/categories
 ```
 
-## Performance Considerations
+Returns available product categories.
 
-- The API uses streaming to efficiently handle large datasets
-- Memory usage is controlled through batch processing
-- Configurable delays prevent overwhelming the client or network
-- Cancellation support allows clients to stop the stream when needed
+## Implementation Details
 
-## Architecture
+### Backend (.NET)
+- Uses IAsyncEnumerable for efficient streaming
+- Implements custom streaming middleware
+- Includes sample data generation
+- Supports filtering and pagination
+- CORS configuration for local development
 
-The project follows clean architecture principles:
-
-- Controllers: Handle HTTP requests and responses
-- Services: Contain business logic and data streaming implementation
-- Models: Define the data structures
+### Frontend (Angular)
+- Real-time data loading
+- Progress indication
+- Filter panel for category and price range
+- Responsive Bootstrap UI
+- Error handling and loading states
 
 ## License
 
